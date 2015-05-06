@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="/Users/Mahir/Downloads/wSens/app/libs/Parse-1.9.1/bolts-android-1.2.0-javadoc.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="0b98cf117d6ed838f776a7f0765c7f04191d7b8e">
+        <dex dex="/Users/Mahir/Downloads/wSens/app/build/intermediates/pre-dexed/debug/bolts-android-1.2.0-javadoc-2534559157256448baefb322b5d5c01805aa4c40.jar" />
+    </item>
+    <item
+        jar="/Users/Mahir/Downloads/wSens/app/libs/Parse-1.9.1/Parse-1.9.1.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="1b065010f3c9d441ede9078aca8eabcd1c81e647">
+        <dex dex="/Users/Mahir/Downloads/wSens/app/build/intermediates/pre-dexed/debug/Parse-1.9.1-50d2f295781f62b122c30dcf7ad0b8dcd05f7146.jar" />
+    </item>
+    <item
+        jar="/Users/Mahir/Downloads/wSens/app/libs/Parse-1.9.1/ParseFacebookUtilsV4-1.9.1.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="f78e5603a5ecac14eaa34a763c9165444a681193">
+        <dex dex="/Users/Mahir/Downloads/wSens/app/build/intermediates/pre-dexed/debug/ParseFacebookUtilsV4-1.9.1-a6b25f628418b132c20ee9e33805c8aab4eaea20.jar" />
+    </item>
+    <item
+        jar="/Users/Mahir/Library/Android/sdk/extras/android/m2repository/com/android/support/support-v4/19.1.0/support-v4-19.1.0.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="85f201b380937e61a9dce6ca90ccf6872abbfb67">
+        <dex dex="/Users/Mahir/Downloads/wSens/app/build/intermediates/pre-dexed/debug/support-v4-19.1.0-8a391794b008ce422d38aeafea00966226a9118f.jar" />
+    </item>
+    <item
+        jar="/Users/Mahir/.gradle/caches/modules-2/files-2.1/com.parse.bolts/bolts-android/1.2.0/6ee2953ccf51ce72b6d548c30c4633b99eb4f9dd/bolts-android-1.2.0.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="6ee2953ccf51ce72b6d548c30c4633b99eb4f9dd">
+        <dex dex="/Users/Mahir/Downloads/wSens/app/build/intermediates/pre-dexed/debug/bolts-android-1.2.0-177f8bd85d51f12547731c81c5cb9659b6967d49.jar" />
+    </item>
+    <item
+        jar="/Users/Mahir/Downloads/wSens/app/libs/Parse-1.9.1/ParseFacebookUtilsV3-1.9.1.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="fef87266c7fcfc92f1536e8d0e1150b465d388d1">
+        <dex dex="/Users/Mahir/Downloads/wSens/app/build/intermediates/pre-dexed/debug/ParseFacebookUtilsV3-1.9.1-6ef74119ff6d8ed4756b8d63e85257ab6cb264b4.jar" />
+    </item>
+    <item
+        jar="/Users/Mahir/Downloads/wSens/app/libs/achartengine-1.1.0.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="6b9f421d67b60253072003b2b8a1028b12cb916a">
+        <dex dex="/Users/Mahir/Downloads/wSens/app/build/intermediates/pre-dexed/debug/achartengine-1.1.0-06a8bdaa1a8bdd07e7b51ebffada0bd8f495ff01.jar" />
+    </item>
+    <item
+        jar="/Users/Mahir/Downloads/wSens/app/libs/Parse-1.9.1/ParseCrashReporting-1.9.1.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="2bfbcce5ae61bdd10676df8e89710693c1256024">
+        <dex dex="/Users/Mahir/Downloads/wSens/app/build/intermediates/pre-dexed/debug/ParseCrashReporting-1.9.1-304300ec3376c808fe767fbb2aadac1956bf4cf6.jar" />
+    </item>
+
+</items>
