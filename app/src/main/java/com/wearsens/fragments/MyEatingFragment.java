@@ -44,6 +44,8 @@ import com.example.MainInterface.CONSTANTS;
 import org.achartengine.GraphicalView;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -725,11 +727,35 @@ public class MyEatingFragment extends Fragment implements BluetoothAdapter.LeSca
                         SWALLOW_COUNT = onlineData.getInt(SWALLOW_ID);
                         food = onlineData.getInt(FOOD_ID);
                         beverage = onlineData.getInt(BEVERAGE_ID);
+                        Date dataDate = onlineData.getDate("Date");
+                        /*
+                        if (!sameAsCurrentDay(dataDate))
+                        {
+                            SWALLOW_COUNT = food = beverage = 0;
+                        }
+                        */
                         createTodayGraph(food, beverage);
                     }
                 }
             });
         }
 
+    }
+
+    void writeToFile() {
+
+        //TO DO: Implement
+    }
+
+    Boolean sameAsCurrentDay(Date d) {
+
+        Calendar calendar = Calendar.getInstance();
+        int curDay = calendar.get(Calendar.DAY_OF_WEEK);
+
+        Calendar c = Calendar.getInstance();
+        c.setTime(d);
+        int dataDay = c.get(Calendar.DAY_OF_WEEK);
+
+        return (curDay == dataDay);
     }
 }
