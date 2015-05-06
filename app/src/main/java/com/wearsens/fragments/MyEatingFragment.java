@@ -124,9 +124,9 @@ public class MyEatingFragment extends Fragment implements BluetoothAdapter.LeSca
 
     long counter = 0;
 
-    String SWALLOW_ID = "Swallow Count";
-    String FOOD_ID = "Food Count";
-    String BEVERAGE_ID = "Beverage Count";
+    String SWALLOW_ID = "SwallowCount";
+    String FOOD_ID = "FoodCount";
+    String BEVERAGE_ID = "BeverageCount";
 
 
     @Override
@@ -635,7 +635,6 @@ public class MyEatingFragment extends Fragment implements BluetoothAdapter.LeSca
                     SWALLOW_COUNT++;
                     // beverage = addElement(beverage, sw_count);
                     food++;
-                    Log.d("increase", "increasing food count" + food);
 
                     syncDataWithDatabase();
                     countIncreased = true;
@@ -697,11 +696,9 @@ public class MyEatingFragment extends Fragment implements BluetoothAdapter.LeSca
             query.getInBackground(id, new GetCallback<ParseObject>() {
                 public void done(ParseObject data, ParseException e) {
                     if (e == null) {
-                        Log.d("test"," object retrieved");
-                        Log.d("data is", "" + data.getInt("SwallowCount"));
-                        data.put("SwallowCount", SWALLOW_COUNT);
-                        data.put("Food Count", food);
-                        data.put("Beverage Count", beverage);
+                        data.put(SWALLOW_ID, SWALLOW_COUNT);
+                        data.put(FOOD_ID, food);
+                        data.put(BEVERAGE_ID, beverage);
                         data.saveInBackground();
                     }
                 }
@@ -725,12 +722,9 @@ public class MyEatingFragment extends Fragment implements BluetoothAdapter.LeSca
             query.getInBackground(id, new GetCallback<ParseObject>() {
                 public void done(ParseObject onlineData, ParseException e) {
                     if (e == null) {
-                        Log.d("test"," object retrieved");
-                        SWALLOW_COUNT = onlineData.getInt("SwallowCount");
-                        Log.d("data","SWALLOW COUNT IS: " + SWALLOW_COUNT);
-                        food = onlineData.getInt("Food Count");
-                        Log.d("data","Food count IS: " + food);
-                        beverage = onlineData.getInt("Beverage Count");
+                        SWALLOW_COUNT = onlineData.getInt(SWALLOW_ID);
+                        food = onlineData.getInt(FOOD_ID);
+                        beverage = onlineData.getInt(BEVERAGE_ID);
                         createTodayGraph(food, beverage);
                     }
                 }
