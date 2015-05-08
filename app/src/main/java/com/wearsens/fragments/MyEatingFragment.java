@@ -223,6 +223,14 @@ public class MyEatingFragment extends Fragment implements BluetoothAdapter.LeSca
         return rootView;
     }
 
+    @Override
+    public void onResume(){
+        super.onResume();
+        loadDataFromDatabase();
+        createTodayGraph(food, beverage);
+
+    }
+
     View.OnClickListener prevListener = new View.OnClickListener()
     {
         @Override
@@ -297,7 +305,6 @@ public class MyEatingFragment extends Fragment implements BluetoothAdapter.LeSca
             loadingViewAnim.start();
             countIncreased = false;
         }
-        //countIncreased = false;
     }
 
     public void createWeekGraph()
@@ -510,7 +517,6 @@ public class MyEatingFragment extends Fragment implements BluetoothAdapter.LeSca
     private ServiceConnection rfduinoServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            Log.d("BT", "in started service");
             rfduinoService = ((RFduinoService.LocalBinder) service).getService();
             if (rfduinoService.initialize()) {
                 boolean result = rfduinoService.connect(bluetoothDevice
@@ -529,7 +535,7 @@ public class MyEatingFragment extends Fragment implements BluetoothAdapter.LeSca
             downgradeState(STATE_DISCONNECTED);
         }
     };
-
+    //Mark: Important
     private final BroadcastReceiver rfduinoReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -543,7 +549,14 @@ public class MyEatingFragment extends Fragment implements BluetoothAdapter.LeSca
             } else if (RFduinoService.ACTION_DISCONNECTED.equals(action)) {
                 downgradeState(STATE_DISCONNECTED);
             } else if (RFduinoService.ACTION_DATA_AVAILABLE.equals(action)) {
-                addData(intent.getByteArrayExtra(RFduinoService.EXTRA_DATA));
+                //Mark:  only called when screen is open
+
+                food = intent.getIntExtra(FOOD_ID, food);
+                beverage = intent.getIntExtra(BEVERAGE_ID, beverage);
+                SWALLOW_COUNT = intent.getIntExtra(SWALLOW_ID, SWALLOW_COUNT);
+                Log.d("shouldn't happen", "called");
+                createTodayGraph(food, beverage);
+                //addData(intent.getByteArrayExtra(RFduinoService.EXTRA_DATA));
             }
         }
     };
@@ -727,7 +740,7 @@ public class MyEatingFragment extends Fragment implements BluetoothAdapter.LeSca
                         SWALLOW_COUNT = onlineData.getInt(SWALLOW_ID);
                         food = onlineData.getInt(FOOD_ID);
                         beverage = onlineData.getInt(BEVERAGE_ID);
-                        Date dataDate = onlineData.getDate("Date");
+                        //Date dataDate = onlineData.getDate("Date");
                         /*
                         if (!sameAsCurrentDay(dataDate))
                         {

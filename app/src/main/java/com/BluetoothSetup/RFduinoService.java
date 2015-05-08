@@ -2,6 +2,8 @@
 
 package com.BluetoothSetup;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import android.Manifest;
@@ -18,9 +20,18 @@ import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
+
+import com.example.MainInterface.CONSTANTS;
+import com.example.MainInterface.SensorData;
+import com.parse.GetCallback;
+import com.parse.ParseObject;
+import com.parse.ParseQuery;
+import com.parse.ParseException;
+import com.parse.SaveCallback;
 
 /*
  * Adapted from:
@@ -49,6 +60,30 @@ public class RFduinoService extends Service {
     public final static UUID UUID_SEND = BluetoothHelper.sixteenBitUuid(0x2222);
     public final static UUID UUID_DISCONNECT = BluetoothHelper.sixteenBitUuid(0x2223);
     public final static UUID UUID_CLIENT_CONFIGURATION = BluetoothHelper.sixteenBitUuid(0x2902);
+
+    //ADDED
+    public static ArrayList<SensorData> VibrationDataList = new ArrayList<SensorData>();
+    public static ArrayList<Double> VibrationDeviationList = new ArrayList<Double>();
+
+    String ReceiveBuffer = "";
+    int ReceivedData = 0;
+
+    final static int WINDOW_SIZE = 10;
+    final static int DISABLE_LENGTH = CONSTANTS.DISABLE_LENGTH;
+    static int DISABLE_COUNTER = 0;
+    static int ConsecutiveZero = 0;
+    static double LastReading = 0;
+    static int called = 0;
+    static double mean, stddev, stddev_last;
+
+    static int SWALLOW_COUNT = 0;
+    static int food = 0;
+    static int beverage = 0;
+
+    String SWALLOW_ID = "SwallowCount";
+    String FOOD_ID = "FoodCount";
+    String BEVERAGE_ID = "BeverageCount";
+
 
     // Implements callback methods for GATT events that the app cares about.  For example,
     // connection change and services discovered.
@@ -131,8 +166,21 @@ public class RFduinoService extends Service {
         if (UUID_RECEIVE.equals(characteristic.getUuid())) 
         {
             final Intent intent = new Intent(action);
-            intent.putExtra(EXTRA_DATA, characteristic.getValue());
-            sendBroadcast(intent, Manifest.permission.BLUETOOTH);
+            //intent.putExtra(EXTRA_DATA, characteristic.getValue());
+            //mark: sends data
+            String ascii = HexAsciiHelper.bytesToAsciiMaybe(characteristic.getValue());
+            if (ascii != null) {
+                boolean shouldBroadcast = ProcessReceivedData(ascii);
+                if (shouldBroadcast)
+                {
+                   intent.putExtra(SWALLOW_ID, SWALLOW_COUNT);
+                   intent.putExtra(FOOD_ID, food);
+                   intent.putExtra(BEVERAGE_ID, beverage);
+                   Log.d("BT", "sending broadcast");
+                   sendBroadcast(intent, Manifest.permission.BLUETOOTH);
+                }
+            }
+
         }
     }
 
@@ -166,6 +214,8 @@ public class RFduinoService extends Service {
      * @return Return true if the initialization is successful.
      */
     public boolean initialize() {
+
+        loadDataFromDatabase();
         // For API level 18 and above, get a reference to BluetoothAdapter through
         // BluetoothManager.
         if (mBluetoothManager == null)
@@ -291,4 +341,230 @@ public class RFduinoService extends Service {
         filter.addAction(ACTION_DATA_AVAILABLE);
         return filter;
     }
+
+    private void addData(byte[] data) {
+        String ascii = HexAsciiHelper.bytesToAsciiMaybe(data);
+        if (ascii != null) {
+            ProcessReceivedData(ascii);
+        }
+    }
+
+    public boolean ProcessReceivedData(String data) {
+    /*
+        if (Connected == false)
+        {
+            Connected = true; // we received the data, its a "heartbeat"
+            ReceiveBuffer = "";
+            VibrationDataList.clear();
+            VibrationDeviationList.clear();
+        }
+        */
+        boolean dataUpdated = false;
+        ReceivedData++;
+        ReceiveBuffer = ReceiveBuffer + data;
+
+        int begin = ReceiveBuffer.indexOf("B");
+        int end = ReceiveBuffer.indexOf("E");
+        if (end > begin) {
+            String newString = ReceiveBuffer.substring(begin, end + 1);
+            ReceiveBuffer = ReceiveBuffer.replace(newString, "");
+            newString = newString.replace(" ", "");
+            newString = newString.replace("B", "");
+            newString = newString.replace("E", "");
+
+            if (newString.contains(":")) {
+                String[] data_split = newString.split(":");
+                if (data_split.length == 2) {
+                    SensorData NewData = new SensorData(data_split[0], data_split[1]);
+
+                    VibrationDataList.add(NewData);
+
+                    if (VibrationDataList.size() > 50) {
+                        VibrationDataList.remove(0);
+                    }
+
+                    dataUpdated = swallowOrBeverageDetected(VibrationDataList, VibrationDeviationList);
+
+                }
+            }
+        }
+        return dataUpdated;
+    }
+    public boolean swallowOrBeverageDetected(ArrayList<SensorData> VibrationDataList, ArrayList<Double> VibrationDeviationList)
+    {
+
+        called++;
+        //List<SensorData> VibrationDataList = MyEatingFragment.VibrationDataList;
+        //List<Double> VibrationDeviationList = MyEatingFragment.VibrationDeviationList;
+        mean = 0;
+        stddev = 0;
+		/*
+		 * Not enough data has accumulated to detect anything
+		 */
+        if (VibrationDataList.size() < WINDOW_SIZE)
+            return false;
+		/*
+		 * Here we calculate the average value in a given window
+		 */
+        int sum = 0;
+        int VibrationDataSize = VibrationDataList.size();
+
+        for (int i = VibrationDataSize - WINDOW_SIZE; i < VibrationDataSize; i++) {
+            try {
+                sum = sum + Integer.parseInt(VibrationDataList.get(i).iValue);
+            } catch (java.lang.NumberFormatException exc) {
+                continue;
+            }
+        }
+
+        mean = sum / WINDOW_SIZE;
+        mean = mean / 100;
+        double sum_variance = 0;
+		/*
+		 * Here, we calculate the standard deviation of each point within a
+		 * detection window. This is an important feature used to detect
+		 * swallows.
+		 */
+        for (int i = VibrationDataSize - WINDOW_SIZE; i < VibrationDataSize; i++) {
+            SensorData current = VibrationDataList.get(i);
+            try {
+                int val = Integer.parseInt(current.iValue);
+                double valD = (double) val;
+                valD = valD / 100;
+
+                double diff = Math.abs(mean - valD);
+                sum_variance = sum_variance + diff;
+
+            } catch (java.lang.NumberFormatException exc) {
+                continue;
+            }
+        }
+
+        stddev = Math.floor(100 * Math.sqrt(sum_variance)) / 100;
+
+		/*
+		 * We can prevent the array from getting too big this way.... We only
+		 * need the last 50 samples anyway
+		 */
+        if (VibrationDeviationList.size() > 50) {
+            VibrationDeviationList.remove(0);
+        }
+
+        VibrationDeviationList.add(Double.valueOf(stddev));
+
+        DISABLE_COUNTER++;
+        boolean swallowDetected = false;
+
+
+        if (stddev > CONSTANTS.threshold)
+        {
+            if (DISABLE_COUNTER >= DISABLE_LENGTH)
+            {
+                Log.d("success", "detected swallows");
+				//SWALLOW DETECTED
+                DISABLE_COUNTER = 0;
+                swallowDetected = true;
+                //if (MyEatingFragment.RegisterSwallows == true)
+                //{
+                    SWALLOW_COUNT++;
+                    // beverage = addElement(beverage, sw_count);
+                    food++;
+
+                    syncDataWithDatabase();
+                    //TO DO: Add to fragment
+                    //countIncreased = true;
+                    //createTodayGraph(food, beverage);
+                    Log.d("BT", "increasing swallow count");
+
+                //}
+
+            }
+        }
+/*
+        if (swallowDetected == false && called % 40 == 0) {
+
+            // beverage = addElement(beverage, SWALLOW_COUNT);
+            beverage++;
+            return true;
+            //createTodayGraph(food, beverage);
+        }
+*/
+            return swallowDetected;
+
+    }
+    void loadDataFromDatabase() {
+
+        SharedPreferences pref = this.getApplicationContext().getSharedPreferences("MyPref", 0);
+        String id = pref.getString("parse_object_id", "empty");
+
+        if (id == "empty") {
+            SWALLOW_COUNT = 0;
+            food = 0;
+            beverage = 0;
+            //createTodayGraph(food, beverage);
+        }
+        else {
+            ParseQuery<ParseObject> query = ParseQuery.getQuery("UserData");
+            query.getInBackground(id, new GetCallback<ParseObject>() {
+                public void done(ParseObject onlineData, ParseException e) {
+                    if (e == null) {
+                        SWALLOW_COUNT = onlineData.getInt(SWALLOW_ID);
+                        food = onlineData.getInt(FOOD_ID);
+                        beverage = onlineData.getInt(BEVERAGE_ID);
+                        //Date dataDate = onlineData.getDate("Date");
+                        /*
+                        if (!sameAsCurrentDay(dataDate))
+                        {
+                            SWALLOW_COUNT = food = beverage = 0;
+                        }
+                        */
+                        //createTodayGraph(food, beverage);
+                    }
+                }
+            });
+        }
+
+    }
+    void syncDataWithDatabase() {
+
+        SharedPreferences pref = this.getApplicationContext().getSharedPreferences("MyPref", 0);
+        final SharedPreferences.Editor editor = pref.edit();
+        String id = pref.getString("parse_object_id", "empty");
+        if (id == "empty")
+        {
+            final ParseObject data = new ParseObject("UserData");
+            data.put(SWALLOW_ID, SWALLOW_COUNT);
+            data.put(FOOD_ID, food);
+            data.put(BEVERAGE_ID, beverage);
+
+            data.saveInBackground(new SaveCallback() {
+                public void done(ParseException e) {
+                    if (e == null) {
+                        String id2 = data.getObjectId();
+                        editor.putString("parse_object_id", id2);
+                        editor.commit();
+                    }
+                }
+            });
+
+
+        }
+        else
+        {
+            ParseQuery<ParseObject> query = ParseQuery.getQuery("UserData");
+
+            query.getInBackground(id, new GetCallback<ParseObject>() {
+                public void done(ParseObject data, ParseException e) {
+                    if (e == null) {
+                        data.put(SWALLOW_ID, SWALLOW_COUNT);
+                        data.put(FOOD_ID, food);
+                        data.put(BEVERAGE_ID, beverage);
+                        data.saveInBackground();
+                    }
+                }
+            });
+        }
+    }
 }
+
+
